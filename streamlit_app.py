@@ -2,7 +2,6 @@ import streamlit as st
 import random
 
 # クイズの問題と答えのリストを定義
-# 問題文、選択肢、正解をより正確なものに修正・追加しました。
 quizzes = [
     {
         "question": "ボートを前に進めるために、オールを水中で引く動作を何と呼びますか？",
@@ -56,56 +55,76 @@ quizzes = [
     }
 ]
 
-# ページタイトルを設定
-st.title("🚣 ローイングクイズゲーム")
-
 # セッション状態を初期化
 if "score" not in st.session_state:
     st.session_state.score = 0
 if "question_number" not in st.session_state:
     st.session_state.question_number = 0
 if "quiz_order" not in st.session_state:
-    # 毎回ランダムな順番でクイズが出題されるように、問題をシャッフル
     st.session_state.quiz_order = random.sample(range(len(quizzes)), len(quizzes))
 
-# 現在のクイズを取得
+# ページタイトルを設定
+st.title("🚣 ローイングクイズゲーム")
+
+# ゲームの状態を管理する
 if st.session_state.question_number < len(quizzes):
+    # クイズの表示
     current_quiz_index = st.session_state.quiz_order[st.session_state.question_number]
     current_quiz = quizzes[current_quiz_index]
 
-    # クイズを表示
     st.header(f"第 {st.session_state.question_number + 1} 問")
     st.write(current_quiz["question"])
 
-    # 選択肢をシャッフルして表示
-    options_shuffled = random.sample(current_quiz["options"], len(current_quiz["options"]))
-    user_answer = st.radio("以下の選択肢から選んでください:", options_shuffled)
-
-    # 回答ボタン
-    if st.button("回答する"):
-        if user_answer == current_quiz["answer"]:
-            st.balloons()
+    # 回答済みの場合は結果を表示、未回答の場合は選択肢を表示
+    if "answered" in st.session_state and st.session_state.answered == True:
+        # ユーザーが選択した答えを表示
+        st.write(f"あなたの答え: **{st.session_state.user_answer}**")
+        
+        # 正解/不正解の表示
+        if st.session_state.user_answer == current_quiz["answer"]:
             st.success("正解です！👏")
-            st.session_state.score += 1
         else:
             st.error(f"残念！不正解です。正解は「{current_quiz['answer']}」でした。")
         
-        # 次の質問へ
-        st.session_state.question_number += 1
-        st.rerun()
+        # 次の質問へ進むボタン
+        if st.button("次の問題へ"):
+            st.session_state.question_number += 1
+            st.session_state.answered = False
+            st.session_state.user_answer = ""
+            st.rerun()
+    else:
+        # 未回答の場合の選択肢表示
+        options_shuffled = random.sample(current_quiz["options"], len(current_quiz["options"]))
+        user_answer = st.radio("以下の選択肢から選んでください:", options_shuffled, key=st.session_state.question_number)
+
+        # 回答ボタン
+        if st.button("回答する"):
+            st.session_state.user_answer = user_answer
+            st.session_state.answered = True
+            
+            # 正解の場合、スコアを加算
+            if user_answer == current_quiz["answer"]:
+                st.session_state.score += 1
+                st.balloons()
+            st.rerun()
 
 else:
     # 全問終了後の表示
     st.info("全問終了しました。")
-    st.subheader(f"あなたのスコア: {st.session_state.score} / {len(quizzes)}")
+    st.subheader(f"あなたの最終スコア: {st.session_state.score} / {len(quizzes)}")
     
-    # もう一度プレイするボタン
-    if st.button("もう一度プレイする"):
+    # もう一度プレイするボタンを大きく表示
+    st.markdown("---")
+    st.markdown("<h3 style='text-align: center;'>もう一度プレイしますか？</h3>", unsafe_allow_html=True)
+    if st.button("🚣 最初からやり直す", key="restart_button"):
         st.session_state.score = 0
         st.session_state.question_number = 0
+        st.session_state.answered = False
+        st.session_state.user_answer = ""
         st.session_state.quiz_order = random.sample(range(len(quizzes)), len(quizzes))
         st.rerun()
 
 # 現在のスコアをサイドバーに表示
-st.sidebar.subheader("現在のスコア")
-st.sidebar.write(f"{st.session_state.score} / {st.session_state.question_number}")
+st.sidebar.subheader("現在の進行状況")
+st.sidebar.write(f"**スコア**: {st.session_state.score} / {st.session_state.question_number}")
+st.sidebar.progress(st.session_state.question_number / len(quizzes))
