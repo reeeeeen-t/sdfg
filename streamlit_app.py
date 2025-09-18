@@ -62,11 +62,16 @@ if "question_number" not in st.session_state:
     st.session_state.question_number = 0
 if "quiz_order" not in st.session_state:
     st.session_state.quiz_order = random.sample(range(len(quizzes)), len(quizzes))
+if "answered" not in st.session_state:
+    st.session_state.answered = False
+if "user_answer" not in st.session_state:
+    st.session_state.user_answer = ""
 
 # ページタイトルを設定
 st.title("🚣 ローイングクイズゲーム")
 
 # ゲームの状態を管理する
+# ここで `st.session_state.question_number` がクイズの総数未満であることを確認
 if st.session_state.question_number < len(quizzes):
     # クイズの表示
     current_quiz_index = st.session_state.quiz_order[st.session_state.question_number]
@@ -76,7 +81,7 @@ if st.session_state.question_number < len(quizzes):
     st.write(current_quiz["question"])
 
     # 回答済みの場合は結果を表示、未回答の場合は選択肢を表示
-    if "answered" in st.session_state and st.session_state.answered == True:
+    if st.session_state.answered:
         # ユーザーが選択した答えを表示
         st.write(f"あなたの答え: **{st.session_state.user_answer}**")
         
@@ -90,7 +95,6 @@ if st.session_state.question_number < len(quizzes):
         if st.button("次の問題へ"):
             st.session_state.question_number += 1
             st.session_state.answered = False
-            st.session_state.user_answer = ""
             st.rerun()
     else:
         # 未回答の場合の選択肢表示
@@ -120,7 +124,6 @@ else:
         st.session_state.score = 0
         st.session_state.question_number = 0
         st.session_state.answered = False
-        st.session_state.user_answer = ""
         st.session_state.quiz_order = random.sample(range(len(quizzes)), len(quizzes))
         st.rerun()
 
