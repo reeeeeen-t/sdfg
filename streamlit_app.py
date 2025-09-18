@@ -1,31 +1,81 @@
-# Streamlitライブラリをインポート
 import streamlit as st
+import random
 
-# ページ設定（タブに表示されるタイトル、表示幅）
-st.set_page_config(page_title="タイトル", layout="wide")
+# クイズの問題と答えのリストを定義
+quizzes = [
+    {
+        "question": "ボートを前に進めるために、オールを水中で引く動作を何と呼びますか？",
+        "options": ["リカバリー", "キャッチ", "フィニッシュ", "ドライブ"],
+        "answer": "ドライブ"
+    },
+    {
+        "question": "2人乗りのボートで、各漕手が1本ずつオールを持つ艇種は何ですか？",
+        "options": ["ペア", "クォドルプル", "ダブルスカル", "シングルスカル"],
+        "answer": "ダブルスカル"
+    },
+    {
+        "question": "ボートのスピードを上げるために、漕手全員がオールを同時に水から上げる動作を何と呼びますか？",
+        "options": ["ブレード", "ストレッチャー", "リカバリー", "ドライブ"],
+        "answer": "リカバリー"
+    },
+    {
+        "question": "オリンピックで最も速いタイムが出るのは、何メートル競漕ですか？",
+        "options": ["1000m", "1500m", "2000m", "5000m"],
+        "answer": "2000m"
+    },
+    {
+        "question": "艇の進路をまっすぐにするための、船尾についている舵を何と呼びますか？",
+        "options": ["コックス", "ラダー", "ブレード", "ストレッチャー"],
+        "answer": "ラダー"
+    }
+]
 
-# タイトルを設定
-st.title('Streamlitのサンプルアプリ')
+# ページタイトルを設定
+st.title("🚣 ローイングクイズゲーム")
 
-# テキスト入力ボックスを作成し、ユーザーからの入力を受け取る
-user_input = st.text_input('あなたの名前を入力してください')
+# セッション状態を初期化
+if "score" not in st.session_state:
+    st.session_state.score = 0
+if "question_number" not in st.session_state:
+    st.session_state.question_number = 0
+if "quiz_order" not in st.session_state:
+    st.session_state.quiz_order = random.sample(range(len(quizzes)), len(quizzes))
 
-# ボタンを作成し、クリックされたらメッセージを表示
-if st.button('挨拶する'):
-    if user_input:  # 名前が入力されているかチェック
-        st.success(f'🌟 こんにちは、{user_input}さん! 🌟')  # メッセージをハイライト
+# 現在のクイズを取得
+current_quiz_index = st.session_state.quiz_order[st.session_state.question_number]
+current_quiz = quizzes[current_quiz_index]
+
+# クイズを表示
+st.header(f"第 {st.session_state.question_number + 1} 問")
+st.write(current_quiz["question"])
+
+# 選択肢をシャッフル
+options_shuffled = random.sample(current_quiz["options"], len(current_quiz["options"]))
+user_answer = st.radio("以下の選択肢から選んでください:", options_shuffled)
+
+# 回答ボタン
+if st.button("回答する"):
+    if user_answer == current_quiz["answer"]:
+        st.success("正解です！👏")
+        st.session_state.score += 1
     else:
-        st.error('名前を入力してください。')  # エラーメッセージを表示
+        st.error(f"残念！不正解です。正解は「{current_quiz['answer']}」でした。")
+    
+    # 次の質問へ
+    if st.session_state.question_number + 1 < len(quizzes):
+        st.session_state.question_number += 1
+        st.rerun()
+    else:
+        st.info("全問終了しました。")
+        st.subheader(f"あなたのスコア: {st.session_state.score} / {len(quizzes)}")
+        
+        # もう一度プレイするボタン
+        if st.button("もう一度プレイする"):
+            st.session_state.score = 0
+            st.session_state.question_number = 0
+            st.session_state.quiz_order = random.sample(range(len(quizzes)), len(quizzes))
+            st.rerun()
 
-# スライダーを作成し、値を選択
-number = st.slider('好きな数字（10進数）を選んでください', 0, 100)
-
-# 補足メッセージ
-st.caption("十字キー（左右）でも調整できます。")
-
-# 選択した数字を表示
-st.write(f'あなたが選んだ数字は「{number}」です。')
-
-# 選択した数値を2進数に変換
-binary_representation = bin(number)[2:]  # 'bin'関数で2進数に変換し、先頭の'0b'を取り除く
-st.info(f'🔢 10進数の「{number}」を2進数で表現すると「{binary_representation}」になります。 🔢')  # 2進数の表示をハイライト
+# 現在のスコアを表示
+st.sidebar.subheader("現在のスコア")
+st.sidebar.write(f"{st.session_state.score} / {st.session_state.question_number}")
